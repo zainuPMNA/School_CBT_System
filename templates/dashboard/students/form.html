@@ -1,0 +1,25 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Add student{% endblock %}
+{% block content %}
+<div>
+  <a href="{% url 'dashboard:student_list' %}" class="btn-link text-sm">← Students</a>
+  <h1 class="page-title mt-1">Add a student</h1>
+</div>
+<form method="post" class="card card-body max-w-2xl space-y-4" novalidate>
+  {% csrf_token %}
+  {% for error in form.non_field_errors %}<div class="alert alert-error">{{ error }}</div>{% endfor %}
+  <div class="grid gap-4 sm:grid-cols-2">
+    {% include "partials/form_field.html" with field=form.admission_no %}
+    {% include "partials/form_field.html" with field=form.full_name %}
+    <div>
+      {% include "partials/form_field.html" with field=form.class_name %}
+      <datalist id="class-options">{% for c in classes %}<option value="{{ c }}">{% endfor %}</datalist>
+    </div>
+    {% include "partials/form_field.html" with field=form.roll_no %}
+    {% include "partials/form_field.html" with field=form.password wrapper_class="sm:col-span-2" %}
+  </div>
+  <div class="flex gap-2">
+    <button class="btn btn-primary">Create student</button>
+    <a href="{% url 'dashboard:student_list' %}" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>{% endblock %}

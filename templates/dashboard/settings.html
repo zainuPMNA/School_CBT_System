@@ -1,0 +1,98 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div>
+  <h1 class="page-title">Institution settings</h1>
+  <p class="page-subtitle">Changes apply everywhere straight away: login page, page headers, login slips, PDF scorecards and Excel exports.</p>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-5">
+  <form method="post" enctype="multipart/form-data" class="card card-body space-y-5 lg:col-span-3" novalidate
+        x-data="{ name: '{{ form.institution_name.value|default:''|escapejs }}', tagline: '{{ form.tagline.value|default:''|escapejs }}', url: '{{ form.login_slip_url.value|default:''|escapejs }}', logo: '{{ object.logo_url|escapejs }}', savedLogo: '{{ object.logo_url|escapejs }}', removeLogo: false }">
+    {% csrf_token %}
+    {% for error in form.non_field_errors %}<div class="alert alert-error">{{ error }}</div>{% endfor %}
+
+    <div>
+      <label for="{{ form.institution_name.id_for_label }}" class="label">Institution name <span class="text-rose-600">*</span></label>
+      <input type="text" name="{{ form.institution_name.html_name }}" id="{{ form.institution_name.id_for_label }}"
+             class="input" maxlength="150" required x-model="name" placeholder="e.g. Springfield Public School">
+      <p class="help">{{ form.institution_name.help_text }}</p>
+      {% for e in form.institution_name.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+
+    <div>
+      <span class="label">School logo</span>
+      <div class="flex items-center gap-4 rounded-lg border border-dashed border-slate-300 p-3">
+        <div class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <img x-show="logo && !removeLogo" :src="logo" alt="School logo" class="h-full w-full object-contain p-1">
+          <span x-show="!logo || removeLogo" class="text-xs text-slate-400">No logo</span>
+        </div>
+        <div class="min-w-0 flex-1 space-y-2">
+          <input type="file" name="{{ form.logo.html_name }}" id="{{ form.logo.id_for_label }}" class="file-input"
+                 accept="image/png,image/jpeg,image/webp,image/gif"
+                 @change="const f = $event.target.files[0]; logo = f ? URL.createObjectURL(f) : savedLogo; if (f) removeLogo = false">
+          {% if object.logo %}
+          <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" name="{{ form.remove_logo.html_name }}" class="checkbox" x-model="removeLogo"> Remove the current logo
+          </label>
+          {% endif %}
+        </div>
+      </div>
+      <p class="help">{{ form.logo.help_text }} A square or wide logo with a white or transparent background looks best.</p>
+      {% for e in form.logo.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+
+    <div>
+      <label for="{{ form.tagline.id_for_label }}" class="label">Tagline</label>
+      <input type="text" name="{{ form.tagline.html_name }}" id="{{ form.tagline.id_for_label }}"
+             class="input" maxlength="150" x-model="tagline">
+      <p class="help">{{ form.tagline.help_text }}</p>
+      {% for e in form.tagline.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+
+    <div>
+      <label for="{{ form.login_slip_url.id_for_label }}" class="label">Address printed on login slips</label>
+      <input type="text" name="{{ form.login_slip_url.html_name }}" id="{{ form.login_slip_url.id_for_label }}"
+             class="input font-mono" maxlength="200" x-model="url" placeholder="{{ env_server_url }}">
+      <p class="help">Leave blank to use the server's configured address (now <span class="font-mono">{{ env_server_url }}</span>).</p>
+      {% for e in form.login_slip_url.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button class="btn btn-primary">Save settings</button>
+      {% if object.updated_by %}<span class="text-xs text-slate-500">Last changed by {{ object.updated_by.username }} on {{ object.updated_at|date:"d M Y, H:i" }}</span>{% endif %}
+    </div>
+
+    <template x-teleport="#settings-preview">
+      <div class="space-y-5">
+        <div class="rounded-xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-sky-600 px-6 py-8 text-center text-white">
+          <template x-if="logo && !removeLogo">
+            <img :src="logo" alt="" class="mx-auto mb-2 h-11 w-auto max-w-[11rem] rounded-lg bg-white object-contain px-2 py-1">
+          </template>
+          <template x-if="!logo || removeLogo">
+            <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-sm font-bold">CBT</div>
+          </template>
+          <p class="text-lg font-bold" x-text="name || 'Institution name'"></p>
+          <p class="mt-0.5 text-xs text-indigo-100" x-show="tagline" x-text="tagline"></p>
+        </div>
+        <div class="rounded border border-dashed border-slate-400 bg-white p-3 text-xs leading-snug text-slate-900">
+          <div class="flex items-center gap-2">
+            <template x-if="logo && !removeLogo"><img :src="logo" alt="" class="h-4 w-auto max-w-[3rem] object-contain"></template>
+            <p class="text-[10px] font-bold uppercase tracking-wide text-indigo-700"><span x-text="name || 'Institution name'"></span> · CBT Login</p>
+          </div>
+          <p class="mt-1 text-sm font-bold">Asha Rao</p>
+          <p class="text-slate-500">Class XII-A · Roll 1</p>
+          <p class="mt-2">Username <b class="font-mono">2024001</b></p>
+          <p>Password <b class="font-mono">Tq7mHw3kZp</b></p>
+          <p class="mt-2 font-mono text-[10px] text-slate-600">Open: <span x-text="url || '{{ env_server_url|escapejs }}'"></span></p>
+        </div>
+      </div>
+    </template>
+  </form>
+
+  <aside class="card self-start lg:col-span-2">
+    <div class="card-header"><h2 class="card-title">Preview</h2><span class="text-xs text-slate-500">updates as you type</span></div>
+    <div class="card-body" id="settings-preview"></div>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Upload students{% endblock %}
+{% block content %}
+<div>
+  <a href="{% url 'dashboard:student_list' %}" class="btn-link text-sm">← Students</a>
+  <h1 class="page-title mt-1">Bulk upload students</h1>
+  <p class="page-subtitle">Excel (.xlsx) or CSV. The whole file is checked first — nothing is saved unless every row is valid.</p>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <form method="post" enctype="multipart/form-data" class="card card-body space-y-4 lg:col-span-2" x-data="{ busy: false }" @submit="busy = true">
+    {% csrf_token %}
+    {% include "partials/form_field.html" with field=form.file %}
+    {% include "partials/form_field.html" with field=form.update_existing %}
+    <button class="btn btn-primary" :disabled="busy">
+      <span x-show="!busy">Upload &amp; import</span>
+      <span x-show="busy" x-cloak>Importing… (hashing passwords can take a few seconds)</span>
+    </button>
+  </form>
+
+  <aside class="card card-body space-y-3 text-sm">
+    <h2 class="card-title">Sample template</h2>
+    <p class="text-slate-600">Columns:</p>
+    <code class="block rounded bg-slate-100 p-2 text-xs">admission_no, full_name, class_name, roll_no, password</code>
+    <ul class="list-disc space-y-1 pl-5 text-slate-600">
+      <li><strong>admission_no</strong> becomes the username.</li>
+      <li><strong>class_name</strong> must match the exam's target class (e.g. XII-A).</li>
+      <li>Leave <strong>password</strong> blank (recommended) for a strong random one. Predictable passwords (only numbers, admission/roll number, name, 123456…) are refused.</li>
+    </ul>
+    <div class="flex gap-2">
+      <a class="btn btn-secondary btn-sm" href="{% url 'dashboard:student_template' 'xlsx' %}">Download .xlsx</a>
+      <a class="btn btn-secondary btn-sm" href="{% url 'dashboard:student_template' 'csv' %}">Download .csv</a>
+    </div>
+  </aside>
+</div>
+
+{% if report %}
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">Import report</h2>
+    {% if report.ok %}<span class="badge badge-green">Success</span>{% else %}<span class="badge badge-red">{{ report.errors|length }} error(s) — nothing saved</span>{% endif %}
+  </div>
+  <div class="card-body space-y-3 text-sm">
+    {% if report.ok %}
+      <p>Created <strong>{{ report.created }}</strong> · Updated <strong>{{ report.updated }}</strong> · Skipped (already existed) <strong>{{ report.skipped }}</strong>
+        {% if report.generated_passwords %} · Auto-generated passwords <strong>{{ report.generated_passwords }}</strong>{% endif %}</p>
+      {% if report.classes %}
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-slate-600">Print login slips:</span>
+        {% for c in report.classes %}<a class="btn btn-primary btn-sm" href="{% url 'dashboard:login_slips' %}?class={{ c|urlencode }}">{{ c }}</a>{% endfor %}
+      </div>
+      {% endif %}
+    {% else %}
+      <div class="overflow-x-auto">
+        <table class="table">
+          <thead><tr><th>Row</th><th>Problem</th></tr></thead>
+          <tbody>{% for e in report.errors %}<tr><td class="font-mono">{{ e.row }}</td><td class="whitespace-normal text-rose-700">{{ e.message }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

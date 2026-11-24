@@ -1,0 +1,48 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Monitor · {{ exam.title }}{% endblock %}
+{% block extra_head %}
+<script>
+  /* Pause auto-refresh while the invigilator is typing in the table or reading a violation log. */
+  window.monitorIdle = function () {
+    var table = document.getElementById("monitor-table");
+    if (!table) return true;
+    var paused = document.getElementById("monitor-pause");
+    if (paused && paused.checked) return false;
+    return !table.contains(document.activeElement) && !table.querySelector("details[open]");
+  };
+</script>
+{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <a href="{% url 'dashboard:exam_detail' exam.pk %}" class="btn-link text-sm">← {{ exam.title }}</a>
+    <h1 class="page-title mt-1">Live lab monitor
+      {% if exam.is_active %}<span class="badge badge-green align-middle">Active</span>{% else %}<span class="badge badge-slate align-middle">Stopped</span>{% endif %}
+    </h1>
+    <p class="page-subtitle">{{ exam.subject }} · Class {{ exam.target_class }} · {{ exam.duration_minutes }} min ·
+      refreshes every {{ refresh_seconds }} s
+      <label class="ml-3 inline-flex items-center gap-1.5"><input id="monitor-pause" type="checkbox" class="checkbox"> pause refresh</label>
+    </p>
+  </div>
+  <div class="flex flex-wrap items-end gap-2">
+    <form hx-post="{% url 'dashboard:monitor_extend_all' exam.pk %}" hx-target="#monitor-table" hx-swap="innerHTML"
+          hx-confirm="Give extra time to EVERY student still writing?" class="flex items-end gap-1.5">
+      {% csrf_token %}
+      <input type="number" name="minutes" value="5" min="1" max="120" class="input w-20" aria-label="Minutes for everyone">
+      <button class="btn btn-secondary">+ min to all</button>
+    </form>
+    <form hx-post="{% url 'dashboard:monitor_force_submit_all' exam.pk %}" hx-target="#monitor-table" hx-swap="innerHTML"
+          hx-confirm="End the exam now and submit EVERY open attempt?">
+      {% csrf_token %}<button class="btn btn-danger">Submit all &amp; end</button>
+    </form>
+    <a href="{% url 'dashboard:exam_results' exam.pk %}" class="btn btn-secondary">Results →</a>
+  </div>
+</div>
+
+<div id="monitor-table"
+     hx-get="{% url 'dashboard:monitor_table' exam.pk %}"
+     hx-trigger="every {{ refresh_seconds }}s [monitorIdle()]"
+     hx-swap="innerHTML">
+  {% include "dashboard/monitor/_table.html" %}
+</div>
+{% endblock %}

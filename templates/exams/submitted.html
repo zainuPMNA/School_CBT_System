@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Test submitted{% endblock %}
+{% block body %}
+<div class="fixed right-3 top-3 z-50">{% include "partials/theme_switcher.html" %}</div>
+<main class="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-600 to-teal-600 px-4 py-10">
+  <div class="card w-full max-w-lg p-8 text-center">
+    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl text-emerald-700">✓</div>
+    <h1 class="mt-4 text-2xl font-bold text-slate-900">Test Submitted Successfully</h1>
+    <p class="mt-1 text-sm text-slate-600">{{ exam.title }} · {{ user.display_name }} ({{ user.username }})</p>
+    <p class="mt-1 text-xs text-slate-500">
+      {% if attempt.status == "AUTO_SUBMITTED" %}Submitted automatically{% else %}Submitted{% endif %}
+      at {{ attempt.submitted_at|date:"H:i:s, d M Y" }}
+    </p>
+
+    <dl class="mt-6 grid grid-cols-3 gap-3 text-sm">
+      <div class="rounded-lg bg-emerald-50 p-3"><dt class="text-xs text-emerald-800">Answered</dt><dd class="text-2xl font-bold text-emerald-700">{{ summary.ANSWERED|add:summary.ANSWERED_MARKED }}</dd></div>
+      <div class="rounded-lg bg-violet-50 p-3"><dt class="text-xs text-violet-800">Marked only</dt><dd class="text-2xl font-bold text-violet-700">{{ summary.MARKED_REVIEW }}</dd></div>
+      <div class="rounded-lg bg-slate-100 p-3"><dt class="text-xs text-slate-700">Unanswered</dt><dd class="text-2xl font-bold text-slate-700">{{ summary.NOT_ANSWERED|add:summary.NOT_VISITED }}</dd></div>
+    </dl>
+
+    <p class="mt-6 text-sm text-slate-600">
+      {% if exam.results_published %}Results for this test have been published — see them on your home page.
+      {% else %}Your score will be shown after your teacher publishes the results.{% endif %}
+    </p>
+
+    <div class="mt-6 flex justify-center gap-3">
+      <a href="{% url 'accounts:student_home' %}" class="btn btn-secondary">My exams</a>
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}<button class="btn btn-primary">Log out</button>
+      </form>
+    </div>
+  </div>
+</main>
+{% endblock %}

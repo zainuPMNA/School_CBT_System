@@ -1,0 +1,38 @@
+# ---------------------------------------------------------------------------
+# Offline LAN CBT — Python dependencies
+# Target runtime: Python 3.12+ (Ubuntu Server 24.04 LTS ships 3.12)
+#
+# OFFLINE INSTALL (school LAN has no internet):
+#   On an internet-connected machine with the SAME OS + Python version:
+#       pip download -r requirements.txt -d wheelhouse/
+#   Copy the wheelhouse/ folder to the lab server, then:
+#       pip install --no-index --find-links=wheelhouse/ -r requirements.txt
+# ---------------------------------------------------------------------------
+
+# Core framework
+Django>=5.2.8,<6.0
+
+# PostgreSQL driver (binary wheels + built-in connection pool support, Django 5.1+)
+psycopg[binary,pool]>=3.2,<4
+
+# Static files served by the Django process as a fallback (Nginx serves them in production)
+whitenoise>=6.7,<7
+
+# ImageField support (question diagrams)
+Pillow>=11.0,<13
+
+# Excel / CSV bulk upload & result export
+openpyxl>=3.1,<4
+pandas>=2.2,<3
+
+# PDF scorecards — pure-Python, no system Pango/Cairo libraries needed (offline friendly)
+reportlab>=4.2,<5
+
+# Password-protected backup files (AES-256-GCM)
+cryptography>=44,<47
+
+# Production WSGI server
+gunicorn>=23.0,<24
+
+# Load testing (Locust) lives in requirements-loadtest.txt: it runs on the
+# PC that generates the load, not on the exam server.

@@ -1,0 +1,122 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Results · {{ exam.title }}{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <a href="{% url 'dashboard:exam_detail' exam.pk %}" class="btn-link text-sm">← {{ exam.title }}</a>
+    <h1 class="page-title mt-1">Results &amp; rank list
+      {% if exam.results_published %}<span class="badge badge-violet align-middle">Published {{ exam.results_published_at|date:"d M H:i" }}</span>
+      {% else %}<span class="badge badge-amber align-middle">Hidden from students</span>{% endif %}
+    </h1>
+    <p class="page-subtitle">{{ exam.subject }} · Class {{ exam.target_class }} · {{ stats.total_questions }} questions · Max {{ stats.max_marks|floatformat:"-2" }} marks</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'dashboard:question_analysis' exam.pk %}" class="btn btn-secondary">Question analysis</a>
+    <a href="{% url 'dashboard:export_results' exam.pk 'xlsx' %}" class="btn btn-secondary">↓ Excel</a>
+    <a href="{% url 'dashboard:export_results' exam.pk 'csv' %}" class="btn btn-secondary">↓ CSV</a>
+    <a href="{% url 'dashboard:scorecards_pdf' exam.pk %}" class="btn btn-secondary">↓ All scorecards (PDF)</a>
+    {% if user.is_admin_role %}
+      {% if exam.results_published %}
+      <form method="post" action="{% url 'dashboard:unpublish_results' exam.pk %}" onsubmit="return confirm('Hide results from students again?');">
+        {% csrf_token %}<button class="btn btn-warning">Unpublish</button>
+      </form>
+      {% else %}
+      <form method="post" action="{% url 'dashboard:publish_results' exam.pk %}"
+            onsubmit="return confirm('Publish results?\n\n• The exam is stopped\n• {{ stats.writing }} student(s) still writing will be auto-submitted\n• Students can see their score, rank and scorecard');">
+        {% csrf_token %}<button class="btn btn-primary">Publish results</button>
+      </form>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+{% if stats.writing %}
+<div class="alert alert-warning">{{ stats.writing }} student(s) are still writing. Their results appear here once they submit{% if user.is_admin_role %} (publishing auto-submits them){% endif %}. <a class="btn-link" href="{% url 'dashboard:monitor_exam' exam.pk %}">Open live monitor →</a></div>
+{% endif %}
+
+<div class="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-7">
+  <div class="stat"><p class="stat-label">Appeared</p><p class="stat-value">{{ stats.appeared }}</p></div>
+  <div class="stat"><p class="stat-label">Absent</p><p class="stat-value text-slate-500">{{ stats.absent }}</p></div>
+  <div class="stat"><p class="stat-label">Average</p><p class="stat-value">{{ stats.average|floatformat:"-2"|default:"—" }}</p></div>
+  <div class="stat"><p class="stat-label">Median</p><p class="stat-value">{{ stats.median|floatformat:"-2"|default:"—" }}</p></div>
+  <div class="stat"><p class="stat-label">Highest</p><p class="stat-value text-emerald-600">{{ stats.highest|floatformat:"-2"|default:"—" }}</p></div>
+  <div class="stat"><p class="stat-label">Lowest</p><p class="stat-value text-rose-600">{{ stats.lowest|floatformat:"-2"|default:"—" }}</p></div>
+  <div class="stat"><p class="stat-label">Avg accuracy</p><p class="stat-value">{% if stats.avg_accuracy is not None %}{{ stats.avg_accuracy|floatformat:"0" }}%{% else %}—{% endif %}</p></div>
+</div>
+
+{% if flagged %}
+<div class="alert alert-error">
+  <p class="font-semibold">Questions to review before publishing</p>
+  <ul class="mt-1 list-disc pl-5">
+    {% for item in flagged %}<li>Q{{ item.number }} ({{ item.topic }}): {{ item.flags|join:"; " }} — <a class="underline" href="{% url 'dashboard:question_update' item.question.pk %}">edit question</a></li>{% endfor %}
+  </ul>
+  <p class="mt-1 text-xs">Fixing an answer key re-grades every submitted attempt automatically.</p>
+</div>
+{% endif %}
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <section class="card lg:col-span-2">
+    <div class="card-header"><h2 class="card-title">Rank list</h2><span class="text-xs text-slate-500">Ties broken by: score → accuracy → fewer wrong → less time</span></div>
+    <div class="overflow-x-auto">
+      <table class="table">
+        <thead><tr><th>Rank</th><th>Student</th><th>Roll</th><th class="text-right">Score</th><th class="text-right">%</th><th class="text-center">✓ / ✗ / –</th><th class="text-right">Accuracy</th><th class="text-right">Time</th><th></th></tr></thead>
+        <tbody>
+          {% for r in results.rows %}
+          <tr>
+            <td class="font-bold {% if r.rank == 1 %}text-amber-500{% elif r.rank <= 3 %}text-indigo-600{% endif %}">{{ r.rank }}</td>
+            <td><div class="font-medium">{{ r.name }}</div><div class="font-mono text-xs text-slate-500">{{ r.username }}{% if r.status == "AUTO_SUBMITTED" %} · auto{% endif %}{% if r.violations %} · <span class="text-rose-600">{{ r.violations }} viol.</span>{% endif %}</div></td>
+            <td>{{ r.roll|default:"—" }}</td>
+            <td class="text-right font-semibold">{{ r.score|floatformat:"-2" }}</td>
+            <td class="text-right">{{ r.percentage|floatformat:"0" }}</td>
+            <td class="text-center text-xs"><span class="text-emerald-700">{{ r.correct }}</span> / <span class="text-rose-700">{{ r.wrong }}</span> / <span class="text-slate-500">{{ r.skipped }}</span></td>
+            <td class="text-right">{{ r.accuracy|floatformat:"0" }}%</td>
+            <td class="text-right font-mono text-xs">{{ r.time_text }}</td>
+            <td class="text-right"><a class="btn btn-secondary btn-sm" href="{% url 'dashboard:scorecards_pdf' exam.pk %}?attempt={{ r.attempt.pk }}" target="_blank" rel="noopener">Scorecard</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" class="py-8 text-center text-slate-500">No submitted attempts yet.</td></tr>
+          {% endfor %}
+          {% for r in results.writing %}
+          <tr class="bg-indigo-50/50"><td>—</td><td><div class="font-medium">{{ r.name }}</div><div class="font-mono text-xs text-slate-500">{{ r.username }}</div></td><td>{{ r.roll|default:"—" }}</td><td colspan="6"><span class="badge badge-indigo">Still writing</span></td></tr>
+          {% endfor %}
+          {% for r in results.absent %}
+          <tr class="text-slate-400"><td>—</td><td><div>{{ r.name }}</div><div class="font-mono text-xs">{{ r.username }}</div></td><td>{{ r.roll|default:"—" }}</td><td colspan="6"><span class="badge badge-slate">Absent</span></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="space-y-6">
+    <section class="card">
+      <div class="card-header"><h2 class="card-title">Hardest questions</h2><a class="btn-link text-xs" href="{% url 'dashboard:question_analysis' exam.pk %}?sort=hardest">All →</a></div>
+      <ul class="divide-y divide-slate-100 text-sm">
+        {% for item in hardest %}
+        <li class="flex items-center justify-between gap-3 px-5 py-2.5">
+          <div class="min-w-0"><p class="font-medium">Q{{ item.number }} <span class="text-xs font-normal text-slate-500">{{ item.topic }}</span></p></div>
+          <div class="flex w-36 shrink-0 items-center gap-2">
+            <div class="h-2 flex-1 overflow-hidden rounded bg-slate-100"><div class="h-2 bg-emerald-500" style="width: {{ item.pct_correct|floatformat:'0' }}%"></div></div>
+            <span class="w-10 text-right text-xs font-semibold">{{ item.pct_correct|floatformat:"0" }}%</span>
+          </div>
+        </li>
+        {% empty %}<li class="px-5 py-4 text-slate-500">Available after submissions.</li>{% endfor %}
+      </ul>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><h2 class="card-title">Topics (weakest first)</h2></div>
+      <ul class="divide-y divide-slate-100 text-sm">
+        {% for t in topics %}
+        <li class="flex items-center justify-between gap-3 px-5 py-2.5">
+          <span class="min-w-0 truncate">{{ t.topic }} <span class="text-xs text-slate-400">({{ t.questions }} Q)</span></span>
+          <div class="flex w-36 shrink-0 items-center gap-2">
+            <div class="h-2 flex-1 overflow-hidden rounded bg-slate-100"><div class="h-2 bg-indigo-500" style="width: {{ t.pct_correct|floatformat:'0' }}%"></div></div>
+            <span class="w-10 text-right text-xs font-semibold">{{ t.pct_correct|floatformat:"0" }}%</span>
+          </div>
+        </li>
+        {% empty %}<li class="px-5 py-4 text-slate-500">No data yet.</li>{% endfor %}
+      </ul>
+    </section>
+  </div>
+</div>
+{% endblock %}

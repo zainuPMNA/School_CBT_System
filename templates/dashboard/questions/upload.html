@@ -1,0 +1,45 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Upload questions{% endblock %}
+{% block content %}
+<div>
+  <a href="{% url 'dashboard:exam_detail' exam.pk %}" class="btn-link text-sm">← {{ exam.title }}</a>
+  <h1 class="page-title mt-1">Bulk upload questions</h1>
+  <p class="page-subtitle">Excel (.xlsx) or CSV. Every row is checked first — nothing is saved unless the whole sheet is valid.</p>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <form method="post" enctype="multipart/form-data" class="card card-body space-y-4 lg:col-span-2">
+    {% csrf_token %}
+    {% include "partials/form_field.html" with field=form.file %}
+    {% include "partials/form_field.html" with field=form.mode %}
+    <p class="help">This exam currently has <strong>{{ exam.questions.count }}</strong> question(s).</p>
+    <button class="btn btn-primary">Upload &amp; import</button>
+  </form>
+
+  <aside class="card card-body space-y-3 text-sm">
+    <h2 class="card-title">Sample template</h2>
+    <code class="block rounded bg-slate-100 p-2 text-xs">sort_order, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, topic_tag</code>
+    <ul class="list-disc space-y-1 pl-5 text-slate-600">
+      <li>LaTeX works in question, options and explanation.</li>
+      <li><strong>correct_option</strong>: A, B, C or D.</li>
+      <li>Attach diagrams afterwards with <em>Edit / add image</em>.</li>
+    </ul>
+    <div class="flex gap-2">
+      <a class="btn btn-secondary btn-sm" href="{% url 'dashboard:question_template' 'xlsx' %}">Download .xlsx</a>
+      <a class="btn btn-secondary btn-sm" href="{% url 'dashboard:question_template' 'csv' %}">Download .csv</a>
+    </div>
+  </aside>
+</div>
+
+{% if report and not report.ok %}
+<section class="card">
+  <div class="card-header"><h2 class="card-title">Problems found</h2><span class="badge badge-red">{{ report.errors|length }} error(s) — nothing saved</span></div>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>Row</th><th>Problem</th></tr></thead>
+      <tbody>{% for e in report.errors %}<tr><td class="font-mono">{{ e.row|default:"—" }}</td><td class="whitespace-normal text-rose-700">{{ e.message }}</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

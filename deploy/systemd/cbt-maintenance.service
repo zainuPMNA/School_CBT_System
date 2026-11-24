@@ -1,0 +1,13 @@
+[Unit]
+Description=CBT: nightly database backup and expired-session cleanup
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=cbt
+Group=www-data
+WorkingDirectory=/opt/cbt/app
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/cbt/venv/bin/python manage.py clearsessions
+ExecStart=/opt/cbt/venv/bin/python manage.py cbt_backup
+ExecStart=/bin/bash /opt/cbt/app/deploy/backup.sh

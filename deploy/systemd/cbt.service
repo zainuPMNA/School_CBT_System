@@ -1,0 +1,36 @@
+[Unit]
+Description=CBT exam server (Gunicorn / Django)
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=notify
+User=cbt
+Group=www-data
+WorkingDirectory=/opt/cbt/app
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=DJANGO_SETTINGS_MODULE=cbt_project.settings
+ExecStart=/opt/cbt/venv/bin/gunicorn -c /opt/cbt/app/deploy/gunicorn.conf.py cbt_project.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=3
+KillMode=mixed
+TimeoutStopSec=40
+
+# /run/cbt holds the socket; www-data (nginx) may enter it.
+RuntimeDirectory=cbt
+RuntimeDirectoryMode=0750
+
+# Hardening: code is read-only, only data/log dirs are writable.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/cbt /var/log/cbt
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block body_class %}bg-gradient-to-br from-indigo-700 via-indigo-600 to-sky-600{% endblock %}
+{% block extra_head %}
+<script>
+  // A login page restored by the Back button carries an old security token: reload it for a fresh one.
+  window.addEventListener("pageshow", function (e) { if (e.persisted) window.location.reload(); });
+</script>
+{% endblock %}
+{% block body %}
+<div class="fixed right-3 top-3 z-50">{% include "partials/theme_switcher.html" %}</div>
+<main class="flex min-h-screen items-center justify-center px-4 py-10">
+  <div class="w-full max-w-md">
+    <div class="mb-6 text-center text-white">
+      {% if CBT_LOGO_URL %}<img src="{{ CBT_LOGO_URL }}" alt="{{ CBT_SCHOOL_NAME }} logo" class="mx-auto mb-2 h-11 w-auto max-w-[11rem] rounded-lg bg-white object-contain px-2 py-1 shadow">{% else %}<div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-2xl font-bold">CBT</div>{% endif %}
+      <h1 class="text-2xl font-bold">{{ CBT_SCHOOL_NAME }}</h1>
+      {% if CBT_TAGLINE %}<p class="mt-1 text-sm text-indigo-100">{{ CBT_TAGLINE }}</p>{% endif %}
+    </div>
+
+    <div class="card p-6 sm:p-8">
+      {% if reason_message %}
+        <div class="alert alert-{{ reason_level }} mb-4">{{ reason_message }}</div>
+      {% endif %}
+
+      {% if blocked %}
+        <div class="alert alert-error mb-4">
+          <p class="font-semibold">This account is already signed in on another computer{% if blocked_ip %} ({{ blocked_ip }}){% endif %}.</p>
+          <p class="mt-1">For exam security only one computer is allowed per student.
+            If that computer crashed or you were moved to a different seat, raise your hand and ask the
+            invigilator to <strong>unlock your session</strong>, then sign in again.</p>
+        </div>
+      {% endif %}
+
+      {% if form.non_field_errors and not blocked %}
+        <div class="alert alert-error mb-4">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate class="space-y-4" x-data="{ busy: false }" @submit="busy = true">
+        {% csrf_token %}
+        {% include "partials/form_field.html" with field=form.username %}
+        <div x-data="{ show: false }">
+          <label for="{{ form.password.id_for_label }}" class="label">Password <span class="text-rose-600">*</span></label>
+          <div class="relative">
+            <input :type="show ? 'text' : 'password'" type="password" name="{{ form.password.html_name }}"
+                   id="{{ form.password.id_for_label }}" class="input pr-16" autocomplete="off" required placeholder="Password">
+            <button type="button" class="absolute inset-y-0 right-0 px-3 text-xs font-medium text-slate-500 hover:text-slate-800"
+                    @click="show = !show" x-text="show ? 'Hide' : 'Show'">Show</button>
+          </div>
+          {% for error in form.password.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="btn btn-primary w-full py-2.5 text-base" :disabled="busy">
+          <span x-show="!busy">Sign in</span>
+          <span x-show="busy" x-cloak>Signing in…</span>
+        </button>
+      </form>
+
+      <p class="mt-6 text-center text-xs text-slate-500">
+        Use the username and password printed on your login slip.<br>
+        Problems? Ask the lab invigilator.
+      </p>
+      <p class="mt-3 text-center text-xs"><a href="{% url 'accounts:about' %}" class="btn-link">About this app</a></p>
+    </div>
+  </div>
+</main>
+{% endblock %}

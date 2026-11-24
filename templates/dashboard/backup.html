@@ -1,0 +1,94 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Backup{% endblock %}
+{% block content %}
+<div>
+  <h1 class="page-title">Backup &amp; restore</h1>
+  <p class="page-subtitle">One file holds everything: students, teachers, exams, questions, diagrams, answers, results, login history, school name and logo.</p>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-2">
+  {# ---------------- Export ---------------- #}
+  <form method="post" action="{% url 'dashboard:backup_create' %}" class="card" novalidate>
+    {% csrf_token %}
+    <div class="card-header">
+      <h2 class="card-title">1 · Download a backup</h2>
+      <span class="badge badge-indigo">Export</span>
+    </div>
+    <div class="card-body space-y-4">
+      <p class="text-sm text-slate-600">Saves a <b>.cbtbackup</b> file to this computer's Downloads folder. Copy it to a pendrive or another PC.</p>
+      {% for error in create_form.non_field_errors %}<div class="alert alert-error">{{ error }}</div>{% endfor %}
+      {% include "partials/form_field.html" with field=create_form.password %}
+      {% include "partials/form_field.html" with field=create_form.password2 %}
+      {% include "partials/form_field.html" with field=create_form.keep_copy %}
+      <button class="btn btn-primary w-full sm:w-auto">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+        Download backup now
+      </button>
+    </div>
+  </form>
+
+  {# ---------------- Import ---------------- #}
+  <form method="post" action="{% url 'dashboard:backup_upload' %}" enctype="multipart/form-data" class="card" novalidate>
+    {% csrf_token %}
+    <div class="card-header">
+      <h2 class="card-title">2 · Upload a backup</h2>
+      <span class="badge badge-amber">Import</span>
+    </div>
+    <div class="card-body space-y-4">
+      <p class="text-sm text-slate-600">Bring back data from a backup file, for example after moving to a new PC or server. The file is checked first; <b>nothing changes</b> until you confirm on the next screen.</p>
+      {% for error in upload_form.non_field_errors %}<div class="alert alert-error">{{ error }}</div>{% endfor %}
+      {% include "partials/form_field.html" with field=upload_form.file %}
+      {% include "partials/form_field.html" with field=upload_form.password %}
+      <button class="btn btn-secondary w-full sm:w-auto">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg>
+        Upload and check
+      </button>
+      <p class="help">Largest file: {{ max_upload_mb }} MB.</p>
+    </div>
+  </form>
+</div>
+
+{# ---------------- Saved copies ---------------- #}
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">Backups kept on this computer</h2>
+    <span class="text-xs text-slate-500">newest {{ keep }} are kept; older ones are removed automatically</span>
+  </div>
+  {% if saved %}
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>Made on</th><th>Type</th><th>Size</th><th>Protection</th><th class="text-right">Actions</th></tr></thead>
+      <tbody>
+      {% for b in saved %}
+        <tr>
+          <td class="whitespace-nowrap">{{ b.modified|date:"d M Y, H:i" }}<div class="font-mono text-[11px] text-slate-400">{{ b.name }}</div></td>
+          <td>{{ b.kind_label }}</td>
+          <td class="whitespace-nowrap">{{ b.size|filesizeformat }}</td>
+          <td>{% if b.encrypted %}<span class="badge badge-green">🔒 Password</span>{% else %}<span class="badge badge-slate">No password</span>{% endif %}</td>
+          <td class="whitespace-nowrap text-right">
+            <a href="{% url 'dashboard:backup_download' b.name %}" class="btn btn-sm btn-secondary">Download</a>
+            <a href="{% url 'dashboard:backup_restore' b.name %}" class="btn btn-sm btn-secondary">Restore…</a>
+            <form method="post" action="{% url 'dashboard:backup_delete' b.name %}" class="inline"
+                  onsubmit="return confirm('Delete this backup file permanently?');">
+              {% csrf_token %}<button class="btn btn-sm btn-secondary text-rose-700">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card-body text-sm text-slate-500">No backups kept here yet. Use <b>Download backup now</b> above.</div>
+  {% endif %}
+  <div class="card-body border-t border-slate-100 text-xs text-slate-500">
+    Folder: <span class="font-mono">{{ backup_dir }}</span> — not reachable from student computers.
+    A copy on the same computer does not help if that computer's disk fails: also keep one on a pendrive.
+  </div>
+</section>
+
+<section class="alert alert-info text-sm">
+  <b>Good habit:</b> download a password-protected backup after every exam and keep it on a pendrive in the office.
+  Restoring a backup replaces <b>all</b> current data with the data in the file; a safety copy of the current data is always kept first.
+</section>
+{% endblock %}

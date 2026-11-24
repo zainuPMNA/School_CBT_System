@@ -1,0 +1,11 @@
+[Unit]
+Description=CBT: auto-submit attempts whose time is over
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=cbt
+Group=www-data
+WorkingDirectory=/opt/cbt/app
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/cbt/venv/bin/python manage.py autosubmit_expired

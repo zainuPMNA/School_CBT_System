@@ -1,0 +1,5 @@
+Bundled 2026-11-21T18:49:06Z
+alpinejs 3.14.8
+htmx.org 2.0.4
+katex 0.16.11
+tailwindcss 3.4.17

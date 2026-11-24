@@ -1,0 +1,81 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{% if object %}Edit exam{% else %}New exam{% endif %}{% endblock %}
+{% block content %}
+<div>
+  <a href="{% if object %}{% url 'dashboard:exam_detail' object.pk %}{% else %}{% url 'dashboard:exam_list' %}{% endif %}" class="btn-link text-sm">← Back</a>
+  <h1 class="page-title mt-1">{% if object %}Edit “{{ object.title }}”{% else %}Create a new exam{% endif %}</h1>
+</div>
+
+<form method="post" class="card card-body max-w-3xl space-y-6" novalidate>
+  {% csrf_token %}
+  {% for error in form.non_field_errors %}<div class="alert alert-error">{{ error }}</div>{% endfor %}
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    {% include "partials/form_field.html" with field=form.title wrapper_class="sm:col-span-2" %}
+    {% include "partials/form_field.html" with field=form.subject wrapper_class="sm:col-span-2" %}
+    <div class="sm:col-span-2" x-data="classPicker('{{ form.target_class.value|default:''|escapejs }}')">
+      <label for="{{ form.target_class.id_for_label }}" class="label">Target class(es) <span class="text-rose-600">*</span></label>
+      {% if classes %}
+      <div class="mb-2 flex flex-wrap gap-2" role="group" aria-label="Classes with students">
+        {% for c in classes %}
+        <label class="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium transition"
+               :class="has('{{ c|escapejs }}') ? 'border-indigo-500 bg-indigo-50 text-indigo-800' : 'border-slate-300 text-slate-700 hover:border-indigo-300'">
+          <input type="checkbox" class="checkbox" :checked="has('{{ c|escapejs }}')" @change="toggle('{{ c|escapejs }}')"> {{ c }}
+        </label>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <input type="text" name="{{ form.target_class.html_name }}" id="{{ form.target_class.id_for_label }}" class="input"
+             x-model="value" maxlength="255" autocomplete="off" required placeholder="e.g. X-A, X-B">
+      <p class="help">
+        {% if classes %}Tick one or more classes above, or type class names separated by commas.{% else %}Type one or more class names separated by commas, e.g. <code>X-A, X-B</code>.{% endif %}
+        Every student in these classes can take this exam.
+        <span x-show="list().length > 1" x-cloak class="font-medium text-indigo-700">· <span x-text="list().length"></span> classes selected</span>
+      </p>
+      {% for e in form.target_class.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+  </div>
+  <script>
+    function classPicker(initial) {
+      return {
+        value: initial,
+        list: function () {
+          var seen = [];
+          this.value.split(/[,;]+/).forEach(function (s) {
+            var c = s.trim().replace(/\s+/g, " ").toUpperCase();
+            if (c && seen.indexOf(c) === -1) seen.push(c);
+          });
+          return seen;
+        },
+        has: function (c) { return this.list().indexOf(c) !== -1; },
+        toggle: function (c) {
+          var l = this.list();
+          l = this.has(c) ? l.filter(function (x) { return x !== c; }) : l.concat([c]);
+          this.value = l.join(", ");
+        }
+      };
+    }
+  </script>
+
+  <fieldset class="grid gap-4 sm:grid-cols-3">
+    <legend class="mb-2 text-sm font-semibold text-slate-900">Timing &amp; marking</legend>
+    {% include "partials/form_field.html" with field=form.duration_minutes %}
+    {% include "partials/form_field.html" with field=form.positive_marks %}
+    {% include "partials/form_field.html" with field=form.negative_marks %}
+  </fieldset>
+
+  <fieldset class="space-y-2">
+    <legend class="mb-2 text-sm font-semibold text-slate-900">Options</legend>
+    {% include "partials/form_field.html" with field=form.shuffle_questions %}
+    {% include "partials/form_field.html" with field=form.shuffle_options %}
+    {% include "partials/form_field.html" with field=form.allow_review_after_publish %}
+  </fieldset>
+
+  {% include "partials/form_field.html" with field=form.instructions %}
+
+  <div class="flex gap-2">
+    <button class="btn btn-primary">{% if object %}Save changes{% else %}Create exam{% endif %}</button>
+    <a href="{% if object %}{% url 'dashboard:exam_detail' object.pk %}{% else %}{% url 'dashboard:exam_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>
+{% endblock %}

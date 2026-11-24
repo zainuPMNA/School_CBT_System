@@ -1,0 +1,72 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Exams{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="page-title">Exams</h1>
+    <p class="page-subtitle">Create weekly tests, add questions, then press <strong>Activate</strong> when the lab is ready.</p>
+  </div>
+  <a href="{% url 'dashboard:exam_create' %}" class="btn btn-primary">+ New exam</a>
+</div>
+
+<form method="get" class="card card-body flex flex-wrap items-end gap-3">
+  <div class="min-w-[14rem] flex-1">
+    <label class="label" for="q">Search</label>
+    <input id="q" name="q" value="{{ q }}" class="input" placeholder="Title or subject">
+  </div>
+  <div>
+    <label class="label" for="class">Class</label>
+    <select id="class" name="class" class="input">
+      <option value="">All classes</option>
+      {% for c in classes %}<option value="{{ c }}" {% if c == selected_class %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="label" for="status">Status</label>
+    <select id="status" name="status" class="input">
+      <option value="">Any</option>
+      <option value="active" {% if status == "active" %}selected{% endif %}>Active</option>
+      <option value="inactive" {% if status == "inactive" %}selected{% endif %}>Inactive</option>
+      <option value="published" {% if status == "published" %}selected{% endif %}>Results published</option>
+    </select>
+  </div>
+  <button class="btn btn-primary">Filter</button>
+  <a href="{% url 'dashboard:exam_list' %}" class="btn btn-secondary">Reset</a>
+</form>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>Exam</th><th>Class</th><th>Duration</th><th>Marks</th><th>Questions</th><th>Attempts</th><th>Status</th><th class="text-right">Start / Stop</th></tr></thead>
+      <tbody>
+        {% for exam in exams %}
+        <tr>
+          <td><a class="font-medium text-indigo-700 hover:underline" href="{% url 'dashboard:exam_detail' exam.pk %}">{{ exam.title }}</a>
+            <div class="text-xs text-slate-500">{{ exam.subject }} · created {{ exam.created_at|date:"d M Y" }}</div></td>
+          <td>{{ exam.target_class }}</td>
+          <td>{{ exam.duration_minutes }} min</td>
+          <td class="text-xs">+{{ exam.positive_marks|floatformat:"-2" }} / −{{ exam.negative_marks|floatformat:"-2" }}</td>
+          <td>{{ exam.num_questions }}</td>
+          <td>{{ exam.num_attempts }}{% if exam.in_progress %} <span class="badge badge-indigo">{{ exam.in_progress }} writing</span>{% endif %}</td>
+          <td>
+            {% if exam.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-slate">Inactive</span>{% endif %}
+            {% if exam.results_published %}<span class="badge badge-violet">Published</span>{% endif %}
+          </td>
+          <td class="text-right">
+            <form method="post" action="{% url 'dashboard:exam_toggle' exam.pk %}"
+                  {% if exam.is_active %}onsubmit="return confirm('Stop this exam? Students will not be able to continue.');"{% endif %}>
+              {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+              {% if exam.is_active %}<button class="btn btn-danger btn-sm">Stop</button>
+              {% else %}<button class="btn btn-success btn-sm" {% if not exam.num_questions or exam.results_published %}disabled title="Needs questions / results already published"{% endif %}>Activate</button>{% endif %}
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="py-8 text-center text-slate-500">No exams yet. <a class="btn-link" href="{% url 'dashboard:exam_create' %}">Create the first one</a>.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

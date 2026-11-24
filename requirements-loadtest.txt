@@ -1,0 +1,6 @@
+# Install on the PC that runs the load test (a lab PC or the server):
+#     pip install -r requirements-loadtest.txt
+# Kept out of requirements.txt so the exam server stays lean and the offline
+# Linux wheelhouse can be built from Windows (locust pulls in Windows-only
+# dependencies that pip cannot resolve for another platform).
+locust>=2.31,<3

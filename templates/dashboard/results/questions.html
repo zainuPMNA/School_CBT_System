@@ -1,0 +1,67 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Question analysis · {{ exam.title }}{% endblock %}
+{% block extra_head %}{% include "partials/katex_assets.html" %}{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <a href="{% url 'dashboard:exam_results' exam.pk %}" class="btn-link text-sm">← Results</a>
+    <h1 class="page-title mt-1">Question-wise analysis</h1>
+    <p class="page-subtitle">{{ exam.title }} · based on {{ analysis.appeared }} submitted attempt(s).
+      Difficulty: Easy ≥ 70% correct, Medium 40–69%, Hard &lt; 40%.
+      {% if analysis.group_size %}Discrimination compares the top and bottom {{ analysis.group_size }} students (−1 to +1; higher is better).{% endif %}</p>
+  </div>
+  <div class="flex gap-1 text-sm">
+    <a href="?sort=order" class="btn btn-sm {% if sort == 'order' %}btn-primary{% else %}btn-secondary{% endif %}">Paper order</a>
+    <a href="?sort=hardest" class="btn btn-sm {% if sort == 'hardest' %}btn-primary{% else %}btn-secondary{% endif %}">Hardest first</a>
+    <a href="?sort=easiest" class="btn btn-sm {% if sort == 'easiest' %}btn-primary{% else %}btn-secondary{% endif %}">Easiest first</a>
+  </div>
+</div>
+
+<div class="space-y-4" data-math>
+  {% for item in items %}
+  {% with q=item.question %}
+  <article class="card {% if item.flags %}border-rose-300{% endif %}">
+    <div class="card-body grid gap-5 lg:grid-cols-5">
+      <div class="lg:col-span-3">
+        <div class="flex flex-wrap items-center gap-2 text-sm">
+          <span class="rounded bg-indigo-600 px-2 py-0.5 font-semibold text-white">Q{{ item.number }}</span>
+          <span class="badge badge-slate">{{ item.topic }}</span>
+          <span class="badge {% if item.difficulty == 'Hard' %}badge-red{% elif item.difficulty == 'Medium' %}badge-amber{% elif item.difficulty == 'Easy' %}badge-green{% else %}badge-slate{% endif %}">{{ item.difficulty }}</span>
+          {% if item.discrimination is not None %}<span class="badge badge-indigo" title="Discrimination index">D = {{ item.discrimination }}</span>{% endif %}
+          <a href="{% url 'dashboard:question_update' q.pk %}" class="btn-link ml-auto text-xs">Edit question</a>
+        </div>
+        <div class="math-content mt-3 text-slate-900">{{ q.question_text }}</div>
+        {% if q.question_image %}<img src="{{ q.question_image.url }}" alt="Figure for Q{{ item.number }}" class="mt-2 max-h-40 rounded border border-slate-200">{% endif %}
+        {% for flag in item.flags %}<p class="mt-2 text-sm font-medium text-rose-700">⚠ {{ flag }}</p>{% endfor %}
+      </div>
+      <div class="space-y-3 lg:col-span-2">
+        <div class="flex h-3 overflow-hidden rounded-full bg-slate-100" title="Correct / Wrong / Skipped">
+          <div class="bg-emerald-500" style="width: {{ item.pct_correct|floatformat:'0' }}%"></div>
+          <div class="bg-rose-500" style="width: {{ item.pct_wrong|floatformat:'0' }}%"></div>
+          <div class="bg-slate-300" style="width: {{ item.pct_skipped|floatformat:'0' }}%"></div>
+        </div>
+        <p class="flex justify-between text-xs">
+          <span class="text-emerald-700">✓ {{ item.correct }} ({{ item.pct_correct|floatformat:"0" }}%)</span>
+          <span class="text-rose-700">✗ {{ item.wrong }} ({{ item.pct_wrong|floatformat:"0" }}%)</span>
+          <span class="text-slate-500">– {{ item.skipped }} ({{ item.pct_skipped|floatformat:"0" }}%)</span>
+        </p>
+        <ul class="space-y-1.5 text-sm">
+          {% for d in item.distribution %}
+          <li class="flex items-center gap-2">
+            <span class="w-6 font-semibold {% if d.is_key %}text-emerald-700{% endif %}">{{ d.key }}</span>
+            <div class="h-5 flex-1 overflow-hidden rounded bg-slate-100">
+              <div class="flex h-5 items-center px-1.5 text-[11px] text-white {% if d.is_key %}bg-emerald-500{% else %}bg-slate-400{% endif %}" style="width: max({{ d.pct|floatformat:'0' }}%, 1.5rem)">{{ d.count }}</div>
+            </div>
+            <span class="math-content w-40 truncate text-xs text-slate-600">{{ d.text }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </article>
+  {% endwith %}
+  {% empty %}
+  <div class="card card-body text-sm text-slate-500">This exam has no questions.</div>
+  {% endfor %}
+</div>
+{% endblock %}

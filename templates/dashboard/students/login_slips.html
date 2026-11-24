@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Login slips{% endblock %}
+{% block extra_head %}
+<style>
+  /* A4: 3 columns x 7 rows = 21 cut-out slips per page */
+  @page { size: A4 portrait; margin: 8mm; }
+  .slip-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .slip {
+    box-sizing: border-box; height: 39mm; padding: 2.5mm 3.5mm;
+    border: 1px dashed #94a3b8; break-inside: avoid; page-break-inside: avoid;
+    display: flex; flex-direction: column; justify-content: space-between;
+    font-size: 9pt; line-height: 1.25; color: #0f172a; background: #fff;
+  }
+  .slip .school { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #4338ca; }
+  .slip .slip-logo { display: inline-block; height: 4mm; width: auto; max-width: 12mm; object-fit: contain; vertical-align: middle; margin-right: 1.5mm; }
+  .slip .name { font-size: 10.5pt; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slip .meta { font-size: 8pt; color: #475569; }
+  .slip .cred { display: grid; grid-template-columns: auto 1fr; column-gap: 2mm; }
+  .slip .cred dt { color: #475569; }
+  .slip .cred dd { margin: 0; font-family: ui-monospace, Consolas, "Liberation Mono", monospace; font-weight: 700; font-size: 10pt; letter-spacing: .03em; }
+  .slip .url { font-size: 7.5pt; color: #334155; font-family: ui-monospace, Consolas, monospace; }
+  @media print {
+    .no-print { display: none !important; }
+    body { background: #fff !important; }
+    .print-area { padding: 0 !important; margin: 0 !important; max-width: none !important; }
+  }
+</style>
+{% endblock %}
+{% block body %}
+<div class="no-print border-b border-slate-200 bg-white">
+  <div class="mx-auto flex max-w-5xl flex-wrap items-end justify-between gap-4 px-4 py-4">
+    <div>
+      <a href="{% url 'dashboard:student_list' %}" class="btn-link text-sm">← Students</a>
+      <h1 class="page-title mt-1">Login slips</h1>
+      <p class="page-subtitle">{{ students|length }} slip(s) · 21 per A4 page · cut along the dashed lines.</p>
+    </div>
+    <form method="get" class="flex flex-wrap items-end gap-2">
+      <div>
+        <label class="label" for="class">Class</label>
+        <select id="class" name="class" class="input">
+          <option value="">All classes</option>
+          {% for c in classes %}<option value="{{ c }}" {% if c in selected_classes %}selected{% endif %}>{{ c }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="label" for="q">Search</label>
+        <input id="q" name="q" value="{{ q }}" class="input" placeholder="Name / admission no.">
+      </div>
+      <button class="btn btn-secondary">Show</button>
+      <button type="button" class="btn btn-primary" onclick="window.print()">🖨 Print</button>
+    </form>
+  </div>
+  {% if selected_classes|length == 1 %}
+  <div class="mx-auto max-w-5xl px-4 pb-4" x-data="{ open: false }">
+    <button type="button" class="btn-link text-sm" @click="open = !open">Regenerate all passwords for {{ selected_classes.0 }}…</button>
+    <form x-show="open" x-cloak method="post" action="{% url 'dashboard:class_password_regenerate' %}" class="alert alert-warning mt-2 flex flex-wrap items-center gap-3">
+      {% csrf_token %}
+      <input type="hidden" name="class_name" value="{{ selected_classes.0 }}">
+      <label class="inline-flex items-center gap-2"><input type="checkbox" name="confirm" value="yes" class="checkbox" required>
+        I understand every student in {{ selected_classes.0 }} gets a new password and is signed out.</label>
+      <button class="btn btn-danger btn-sm">Regenerate</button>
+    </form>
+  </div>
+  {% endif %}
+  <div class="mx-auto max-w-5xl px-4">{% include "partials/messages.html" %}</div>
+</div>
+
+<div class="print-area mx-auto max-w-5xl px-4 py-6">
+  {% if students %}
+  <div class="slip-grid">
+    {% for s in students %}
+    <div class="slip">
+      <div>
+        <div class="school">{% if CBT_LOGO_URL %}<img src="{{ CBT_LOGO_URL }}" alt="" class="slip-logo">{% endif %}{{ CBT_SCHOOL_NAME }} · CBT Login</div>
+        <div class="name">{{ s.student_profile.full_name|default:s.username }}</div>
+        <div class="meta">Class {{ s.student_profile.batch_or_class|default:"—" }}{% if s.student_profile.roll_number %} · Roll {{ s.student_profile.roll_number }}{% endif %}</div>
+      </div>
+      <dl class="cred">
+        <dt>Username</dt><dd>{{ s.username }}</dd>
+        <dt>Password</dt><dd>{% if s.student_profile.initial_password %}{{ s.student_profile.initial_password }}{% else %}<span style="font-weight:400;font-size:8pt">ask invigilator</span>{% endif %}</dd>
+      </dl>
+      <div class="url">Open: {{ CBT_SERVER_URL }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p class="no-print text-center text-slate-500">No students match this filter.</p>
+  {% endif %}
+</div>
+{% endblock %}

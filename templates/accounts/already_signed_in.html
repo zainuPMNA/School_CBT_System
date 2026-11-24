@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Already signed in{% endblock %}
+{% block body_class %}bg-gradient-to-br from-indigo-700 via-indigo-600 to-sky-600{% endblock %}
+{% block body %}
+<div class="fixed right-3 top-3 z-50">{% include "partials/theme_switcher.html" %}</div>
+<main class="flex min-h-screen items-center justify-center px-4 py-10">
+  <div class="w-full max-w-md">
+    <div class="mb-6 text-center text-white">
+      {% if CBT_LOGO_URL %}<img src="{{ CBT_LOGO_URL }}" alt="{{ CBT_SCHOOL_NAME }} logo" class="mx-auto mb-2 h-11 w-auto max-w-[11rem] rounded-lg bg-white object-contain px-2 py-1 shadow">{% else %}<div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-2xl font-bold">CBT</div>{% endif %}
+      <h1 class="text-2xl font-bold">{{ CBT_SCHOOL_NAME }}</h1>
+    </div>
+    <div class="card p-6 text-center sm:p-8">
+      <h2 class="text-lg font-bold text-slate-900">This browser is already signed in</h2>
+      <p class="mt-2 text-sm text-slate-600">
+        <strong class="text-slate-900">{{ user.display_name }}</strong> ({{ user.username }}) is signed in, probably in another tab.
+        Only one person can be signed in per browser at a time.
+      </p>
+      <div class="mt-6 flex flex-col gap-2">
+        <a href="{% url 'accounts:home' %}" class="btn btn-secondary w-full">Continue as {{ user.display_name }}</a>
+        <form method="post" action="{% url 'accounts:logout' %}">
+          {% csrf_token %}
+          <button class="btn btn-primary w-full">Sign out, then sign in as someone else</button>
+        </form>
+      </div>
+      <p class="mt-5 text-xs text-slate-500">Tip: to use two accounts at once, open the second one in a private / incognito window.</p>
+    </div>
+  </div>
+</main>
+{% endblock %}

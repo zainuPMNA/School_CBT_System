@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.sqlite3
+/staticfiles/
+/media/*
+!/media/.gitkeep
+/logs/*
+!/logs/.gitkeep
+/wheelhouse/
+/bin/
+/dist/
+/loadtest/result*.csv
+.idea/
+.vscode/
+node_modules/
+
+# Never upload school data or local tools
+/backups/
+*.cbtbackup
+*.sqlite3-wal
+*.sqlite3-shm
+/.claude/
+*.log
+~$*
+
+# Internal school documents (kept off the public repository)
+/docs/CBT_System_Proposal.*

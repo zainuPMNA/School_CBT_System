@@ -1,0 +1,84 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Students{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="page-title">Students</h1>
+    <p class="page-subtitle">{{ page_obj.paginator.count }} student(s){% if selected_class %} in {{ selected_class }}{% endif %}.
+      A green lock means the student is signed in and bound to one PC.</p>
+  </div>
+  {% if user.is_admin_role %}
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'dashboard:student_create' %}" class="btn btn-secondary">+ Add student</a>
+    <a href="{% url 'dashboard:student_upload' %}" class="btn btn-primary">Bulk upload</a>
+    <a href="{% url 'dashboard:login_slips' %}{% if selected_class %}?class={{ selected_class|urlencode }}{% endif %}" class="btn btn-secondary">Print login slips</a>
+  </div>
+  {% endif %}
+</div>
+
+<form method="get" class="card card-body flex flex-wrap items-end gap-3">
+  <div class="min-w-[14rem] flex-1">
+    <label class="label" for="q">Search</label>
+    <input id="q" name="q" value="{{ q }}" class="input" placeholder="Admission no., name or roll no.">
+  </div>
+  <div>
+    <label class="label" for="class">Class</label>
+    <select id="class" name="class" class="input">
+      <option value="">All classes</option>
+      {% for c in classes %}<option value="{{ c }}" {% if c == selected_class %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+  </div>
+  <label class="inline-flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="locked" value="1" class="checkbox" {% if locked_only %}checked{% endif %}> Signed-in only</label>
+  <button class="btn btn-primary">Filter</button>
+  <a href="{% url 'dashboard:student_list' %}" class="btn btn-secondary">Reset</a>
+</form>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead>
+        <tr><th>Admission no.</th><th>Name</th><th>Class</th><th>Roll</th><th>Session</th><th>Last login</th><th class="text-right">Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+        <tr>
+          <td class="font-mono">{{ s.username }}{% if not s.is_active %} <span class="badge badge-red">disabled</span>{% endif %}</td>
+          <td>{{ s.student_profile.full_name|default:"—" }}</td>
+          <td>{{ s.student_profile.batch_or_class|default:"—" }}</td>
+          <td>{{ s.student_profile.roll_number|default:"—" }}</td>
+          <td>
+            {% if s.active_session_key %}
+              <span class="badge badge-green" title="Since {{ s.session_started_at|date:'H:i:s' }}">🔒 {{ s.last_login_ip|default:"signed in" }}</span>
+            {% else %}
+              <span class="badge badge-slate">not signed in</span>
+            {% endif %}
+          </td>
+          <td class="text-xs text-slate-500">{{ s.last_login|date:"d M H:i"|default:"never" }}</td>
+          <td>
+            <div class="flex justify-end gap-2">
+              {% if s.active_session_key %}
+              <form method="post" action="{% url 'dashboard:student_unlock' s.pk %}"
+                    onsubmit="return confirm('Unlock {{ s.username|escapejs }}? Their current PC will be signed out.');">
+                {% csrf_token %}<input type="hidden" name="next" value="{{ current_url }}">
+                <button class="btn btn-warning btn-sm">Unlock session</button>
+              </form>
+              {% endif %}
+              {% if user.is_admin_role %}
+              <form method="post" action="{% url 'dashboard:student_reset_password' s.pk %}"
+                    onsubmit="return confirm('Generate a NEW password for {{ s.username|escapejs }}? The old one stops working.');">
+                {% csrf_token %}<input type="hidden" name="next" value="{{ current_url }}">
+                <button class="btn btn-secondary btn-sm">Reset password</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="py-8 text-center text-slate-500">No students found.{% if user.is_admin_role %} <a class="btn-link" href="{% url 'dashboard:student_upload' %}">Upload a class list</a>.{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

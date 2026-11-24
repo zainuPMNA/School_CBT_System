@@ -1,0 +1,77 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="page-title">Overview</h1>
+    <p class="page-subtitle">Lab server: <span class="font-mono">{{ CBT_SERVER_URL }}</span> · Session mode: <strong>{{ CBT_SINGLE_SESSION_MODE }}</strong></p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'dashboard:exam_create' %}" class="btn btn-primary">+ New exam</a>
+    {% if user.is_admin_role %}
+    <a href="{% url 'dashboard:student_upload' %}" class="btn btn-secondary">Upload students</a>
+    <a href="{% url 'dashboard:login_slips' %}" class="btn btn-secondary">Print login slips</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
+  <div class="stat"><p class="stat-label">Students</p><p class="stat-value">{{ student_count }}</p></div>
+  <div class="stat"><p class="stat-label">Classes</p><p class="stat-value">{{ class_count }}</p></div>
+  <div class="stat"><p class="stat-label">Exams</p><p class="stat-value">{{ exam_count }}</p></div>
+  <div class="stat"><p class="stat-label">Writing now</p><p class="stat-value text-indigo-600">{{ in_progress_count }}</p></div>
+  <a href="{% url 'dashboard:student_list' %}?locked=1" class="stat hover:border-indigo-300">
+    <p class="stat-label">Signed-in students</p><p class="stat-value">{{ locked_count }}</p>
+  </a>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <section class="card lg:col-span-2">
+    <div class="card-header"><h2 class="card-title">Active exams</h2><a class="btn-link text-sm" href="{% url 'dashboard:exam_list' %}">All exams →</a></div>
+    {% if active_exams %}
+    <div class="overflow-x-auto">
+      <table class="table">
+        <thead><tr><th>Exam</th><th>Class</th><th>Questions</th><th>Writing</th><th>Started</th><th></th></tr></thead>
+        <tbody>
+          {% for exam in active_exams %}
+          <tr>
+            <td><a class="font-medium text-indigo-700 hover:underline" href="{% url 'dashboard:exam_detail' exam.pk %}">{{ exam.title }}</a><div class="text-xs text-slate-500">{{ exam.subject }} · {{ exam.duration_minutes }} min</div></td>
+            <td>{{ exam.target_class }}</td>
+            <td>{{ exam.num_questions }}</td>
+            <td><span class="badge badge-indigo">{{ exam.in_progress }}</span></td>
+            <td>{{ exam.num_attempts }}</td>
+            <td class="flex justify-end gap-2">
+              <a href="{% url 'dashboard:monitor_exam' exam.pk %}" class="btn btn-primary btn-sm">Monitor</a>
+              <form method="post" action="{% url 'dashboard:exam_toggle' exam.pk %}" onsubmit="return confirm('Stop this exam? Students will not be able to continue.');">
+                {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button class="btn btn-danger btn-sm">Stop</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="card-body text-sm text-slate-500">No exam is active. Open an exam and press <strong>Activate</strong> to let students start.</div>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">Recent sign-in activity</h2></div>
+    <ul class="divide-y divide-slate-100 text-sm">
+      {% for ev in recent_events %}
+      <li class="px-5 py-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-medium">{% if ev.user %}{{ ev.user.username }}{% else %}{{ ev.username_attempted }}{% endif %}</span>
+          <span class="badge {% if ev.event_type == 'LOGIN' %}badge-green{% elif ev.event_type == 'LOGIN_BLOCKED' or ev.event_type == 'LOGIN_FAILED' %}badge-red{% elif ev.event_type == 'ADMIN_UNLOCK' or ev.event_type == 'SESSION_REPLACED' %}badge-amber{% else %}badge-slate{% endif %}">{{ ev.get_event_type_display }}</span>
+        </div>
+        <div class="text-xs text-slate-500">{{ ev.timestamp|date:"d M H:i:s" }}{% if ev.ip_address %} · {{ ev.ip_address }}{% endif %}{% if ev.performed_by %} · by {{ ev.performed_by.username }}{% endif %}</div>
+      </li>
+      {% empty %}
+      <li class="px-5 py-4 text-slate-500">No activity yet.</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

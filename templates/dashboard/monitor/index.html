@@ -1,0 +1,18 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Live monitor{% endblock %}
+{% block content %}
+<h1 class="page-title">Live lab monitor</h1>
+{% if active_exams %}
+  <p class="page-subtitle">Several exams are active. Choose one to monitor.</p>
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% for exam in active_exams %}
+    <a href="{% url 'dashboard:monitor_exam' exam.pk %}" class="card card-body hover:border-indigo-300">
+      <p class="font-semibold text-slate-900">{{ exam.title }}</p>
+      <p class="text-sm text-slate-500">{{ exam.subject }} · Class {{ exam.target_class }} · {{ exam.num_attempts }} started</p>
+    </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card card-body text-sm text-slate-600">No exam is active right now. Activate an exam from the <a class="btn-link" href="{% url 'dashboard:exam_list' %}">Exams</a> page; you can also open the monitor for any exam from its page.</div>
+{% endif %}
+{% endblock %}

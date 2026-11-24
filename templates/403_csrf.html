@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Page out of date{% endblock %}
+{% block body %}
+<main class="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
+  <div class="card w-full max-w-md p-8 text-center">
+    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-2xl text-amber-700">↻</div>
+    <h1 class="mt-4 text-xl font-bold text-slate-900">This page was out of date</h1>
+    <p class="mt-2 text-sm text-slate-600">
+      Nothing was saved. This usually happens when someone signs in or out in another tab of the same browser,
+      or when an old page is opened with the Back button.
+    </p>
+    <p class="mt-2 text-sm text-slate-600">Go back, <strong>reload the page</strong> (press F5) and try again.</p>
+    <div class="mt-6 flex justify-center gap-3">
+      {% if back_url %}<a href="{{ back_url }}" class="btn btn-primary">Go back and reload</a>{% endif %}
+      <a href="{% url 'accounts:home' %}" class="btn btn-secondary">Home</a>
+    </div>
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Restore backup{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="page-title">Restore a backup</h1>
+    <p class="page-subtitle font-mono">{{ name }}</p>
+  </div>
+  <a href="{% url 'dashboard:backup' %}" class="btn btn-secondary">← Back to Backup</a>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-5">
+  <section class="card self-start lg:col-span-2">
+    <div class="card-header"><h2 class="card-title">What is in this backup</h2></div>
+    <div class="card-body">
+      {% if preview %}
+      <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+        <div class="col-span-2"><dt class="text-xs text-slate-500">School</dt><dd class="font-semibold text-slate-900">{{ preview.school|default:"—" }}</dd></div>
+        <div><dt class="text-xs text-slate-500">Made on</dt><dd class="font-semibold text-slate-900">{{ preview.created_display|default:"—" }}</dd></div>
+        <div><dt class="text-xs text-slate-500">Made by</dt><dd class="font-semibold text-slate-900">{{ preview.created_by|default:"—" }}</dd></div>
+        <div><dt class="text-xs text-slate-500">Students</dt><dd class="text-xl font-bold text-slate-900">{{ preview.counts.students }}</dd></div>
+        <div><dt class="text-xs text-slate-500">Teachers / admins</dt><dd class="text-xl font-bold text-slate-900">{{ preview.counts.staff }}</dd></div>
+        <div><dt class="text-xs text-slate-500">Exams</dt><dd class="text-xl font-bold text-slate-900">{{ preview.counts.exams }}</dd></div>
+        <div><dt class="text-xs text-slate-500">Questions</dt><dd class="text-xl font-bold text-slate-900">{{ preview.counts.questions }}</dd></div>
+        <div><dt class="text-xs text-slate-500">Test attempts</dt><dd class="text-xl font-bold text-slate-900">{{ preview.counts.attempts }}</dd></div>
+        <div><dt class="text-xs text-slate-500">Files (logo, diagrams)</dt><dd class="text-xl font-bold text-slate-900">{{ preview.media_files }}</dd></div>
+        <div class="col-span-2"><dt class="text-xs text-slate-500">App version</dt><dd class="text-slate-700">{{ preview.app_version|default:"—" }}{% if preview.encrypted %} · 🔒 password-protected{% endif %}</dd></div>
+      </dl>
+      {% else %}
+      <p class="text-sm text-slate-600">🔒 This backup is password-protected, so its details can only be read with the password. They are checked again when you restore.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <form method="post" class="card lg:col-span-3" novalidate>
+    {% csrf_token %}
+    <div class="card-header"><h2 class="card-title">Replace the current data</h2><span class="badge badge-red">Careful</span></div>
+    <div class="card-body space-y-4">
+      <div class="alert alert-warning text-sm">
+        <div>
+          Restoring <b>deletes all current data</b> (students, exams, results, settings) and puts the backup's data in its place.
+          A safety copy of the current data is saved first, so this can be undone by restoring that copy.
+          <b>Everyone is signed out</b>; after restoring, sign in with an admin account <b>from the backup</b>.
+        </div>
+      </div>
+      {% if exam_running %}<div class="alert alert-error text-sm">Students are writing a test right now. Restore after the test has ended.</div>{% endif %}
+      {% for error in form.non_field_errors %}<div class="alert alert-error">{{ error }}</div>{% endfor %}
+      {% if encrypted %}{% include "partials/form_field.html" with field=form.backup_password %}{% endif %}
+      {% include "partials/form_field.html" with field=form.admin_password %}
+      {% include "partials/form_field.html" with field=form.confirm %}
+      <button class="btn bg-rose-600 text-white hover:bg-rose-700" {% if exam_running %}disabled{% endif %}>Restore this backup</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

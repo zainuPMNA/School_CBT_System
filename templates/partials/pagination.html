@@ -1,0 +1,16 @@
+{% if page_obj.has_other_pages %}
+<nav class="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm" aria-label="Pagination">
+  <p class="text-slate-500">
+    Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+  </p>
+  <div class="flex gap-2">
+    {% if page_obj.has_previous %}
+      <a class="btn btn-secondary btn-sm" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">&larr; Previous</a>
+    {% endif %}
+    <span class="px-2 py-1 text-slate-600">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a class="btn btn-secondary btn-sm" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Next &rarr;</a>
+    {% endif %}
+  </div>
+</nav>
+{% endif %}

@@ -1,0 +1,16 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Delete exam{% endblock %}
+{% block content %}
+<div class="card card-body max-w-xl space-y-4">
+  <h1 class="page-title">Delete “{{ exam.title }}”?</h1>
+  <div class="alert alert-error">
+    This permanently deletes the exam, its <strong>{{ exam.num_questions }}</strong> question(s) and images,
+    and <strong>{{ exam.num_attempts }}</strong> student attempt(s) with all answers and results. This cannot be undone.
+  </div>
+  <form method="post" class="flex gap-2">
+    {% csrf_token %}
+    <button class="btn btn-danger">Yes, delete permanently</button>
+    <a href="{% url 'dashboard:exam_detail' exam.pk %}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

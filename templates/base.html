@@ -1,0 +1,32 @@
+{% load static %}<!doctype html>
+<html lang="en" class="h-full" data-theme="{{ CBT_THEME|default:'light' }}"{% if not CBT_THEME %} data-theme-from-browser{% endif %}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ CBT_SCHOOL_NAME }}{% endblock %} · CBT</title>
+  <script>
+    // Choose the screen theme before anything is drawn (no flash of the wrong colours).
+    // Signed-in users get the theme saved on their account; visitors get this browser's last choice.
+    (function () {
+      var html = document.documentElement;
+      try {
+        if (html.hasAttribute("data-theme-from-browser")) {
+          var t = localStorage.getItem("cbt-theme");
+          if (t === "light" || t === "dark" || t === "warm") html.setAttribute("data-theme", t);
+        } else {
+          localStorage.setItem("cbt-theme", html.getAttribute("data-theme"));
+        }
+      } catch (e) { /* storage blocked: keep the server's choice */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block extra_head %}{% endblock %}
+  {# All scripts are local files — the app never contacts the internet. #}
+  <script defer src="{% static 'js/theme.js' %}"></script>
+  <script defer src="{% static 'vendor/htmx/htmx.min.js' %}"></script>
+  <script defer src="{% static 'vendor/alpinejs/alpine.min.js' %}"></script>
+</head>
+<body class="min-h-full {% block body_class %}{% endblock %}" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+{% block body %}{% endblock %}
+</body>
+</html>

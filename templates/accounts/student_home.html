@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}My exams{% endblock %}
+{% block body %}
+<header class="bg-indigo-700 text-white">
+  <div class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
+    <div class="flex items-center gap-3">
+      {% if CBT_LOGO_URL %}<img src="{{ CBT_LOGO_URL }}" alt="" class="h-7 w-auto max-w-[6rem] shrink-0 rounded bg-white object-contain px-1 py-0.5">{% endif %}
+      <div>
+        <p class="text-xs uppercase tracking-wide text-indigo-200">{{ CBT_SCHOOL_NAME }}</p>
+        <p class="font-semibold">{{ user.display_name }} <span class="font-normal text-indigo-200">· {{ user.username }}{% if profile %} · {{ profile.batch_or_class }}{% if profile.roll_number %} · Roll {{ profile.roll_number }}{% endif %}{% endif %}</span></p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      {% include "partials/theme_switcher.html" %}
+      <a href="{% url 'accounts:about' %}" class="text-sm text-indigo-100 hover:text-white hover:underline">About</a>
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button class="btn btn-sm border border-white/40 bg-white/10 text-white hover:bg-white/20">Log out</button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<main class="mx-auto max-w-5xl space-y-6 px-4 py-8">
+  {% include "partials/messages.html" %}
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">Exams available to you</h2></div>
+    {% if exam_rows %}
+    <ul class="divide-y divide-slate-100">
+      {% for exam, attempt in exam_rows %}
+      <li class="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+        <div>
+          <p class="font-semibold text-slate-900">{{ exam.title }}</p>
+          <p class="text-sm text-slate-500">{{ exam.subject }} · {{ exam.num_questions }} questions · {{ exam.duration_minutes }} minutes
+            · +{{ exam.positive_marks|floatformat:"-2" }} / −{{ exam.negative_marks|floatformat:"-2" }}</p>
+        </div>
+        <div>
+          {% if attempt and attempt.is_finished %}
+            <a href="{% url 'cbt:submitted' exam.pk %}" class="badge badge-green">✓ Submitted</a>
+          {% elif attempt %}
+            <form method="post" action="{% url 'cbt:start' exam.pk %}">
+              {% csrf_token %}<button class="btn btn-warning">Resume test →</button>
+            </form>
+          {% else %}
+            <a href="{% url 'cbt:instructions' exam.pk %}" class="btn btn-primary">Read instructions &amp; start →</a>
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      <div class="card-body text-sm text-slate-500">No exam is active for your class right now. Please wait for the invigilator.</div>
+    {% endif %}
+  </section>
+
+  {% if published_attempts %}
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">Published results</h2></div>
+    <table class="table">
+      <thead><tr><th>Exam</th><th>Score</th><th>Correct</th><th>Wrong</th><th>Attempted</th><th></th></tr></thead>
+      <tbody>
+        {% for a in published_attempts %}
+        <tr>
+          <td>{{ a.exam.title }}</td>
+          <td class="font-semibold">{{ a.total_score|floatformat:"-2" }} / {{ a.exam.max_marks|floatformat:"-2" }}</td>
+          <td>{{ a.correct_count }}</td><td>{{ a.wrong_count }}</td><td>{{ a.attempted_count }}</td>
+          <td class="text-right"><a class="btn btn-primary btn-sm" href="{% url 'cbt:result' a.exam_id %}">View scorecard</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+</main>
+{% endblock %}
