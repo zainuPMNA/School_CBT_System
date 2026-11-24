@@ -42,3 +42,7 @@ python manage.py test
 ## Developer
 
 Zainulabid, Academic Coordinator, YES P.A. Inamdar English School and Junior College, Perinthalmanna.
+
+## Licence
+
+Apache License 2.0. See [LICENSE](LICENSE).
